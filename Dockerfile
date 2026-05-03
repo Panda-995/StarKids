@@ -8,6 +8,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
 FROM base AS builder
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
