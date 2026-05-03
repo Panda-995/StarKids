@@ -1,0 +1,854 @@
+// =============================================================================
+// StarKids - 小朋友奖励乐园
+// Prisma Schema 完整文件
+//
+// 数据库: SQLite (本地开发) / PostgreSQL (Docker 部署)
+// ORM: Prisma 7.x
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// =============================================================================
+//  枚举定义
+// =============================================================================
+
+// ── 家庭成员角色 ──
+enum MemberRole {
+  PARENT               // 家长
+  KID                  // 小朋友
+}
+
+// ── 用户角色 ──
+enum UserAccountRole {
+  ADMIN                // 超级管理员 (平台)
+  PARENT               // 家长
+  KID                  // 小朋友账号
+}
+
+// ── 任务类型 ──
+enum TaskType {
+  DAILY                // 日常任务 (每天重复)
+  ONETIME              // 一次性任务
+  CHALLENGE            // 挑战任务 (高难度高积分)
+  HABIT                // 习惯养成 (连续打卡)
+}
+
+// ── 任务生成频率 ──
+enum TaskFrequency {
+  DAILY                // 每日生成
+  WEEKLY               // 每周生成
+  MANUAL               // 手动创建 (不自动生成)
+}
+
+// ── 任务难度 ──
+enum TaskDifficulty {
+  EASY                 // ⭐ 简单
+  MEDIUM               // ⭐⭐ 中等
+  HARD                 // ⭐⭐⭐ 困难
+}
+
+// ── 任务状态 ──
+enum TaskStatus {
+  ACTIVE               // 启用
+  INACTIVE             // 停用
+  ARCHIVED             // 归档
+}
+
+// ── 任务完成状态 ──
+enum CompletionStatus {
+  PENDING              // 待审核
+  APPROVED             // 已批准
+  REJECTED             // 已拒绝
+}
+
+// ── 任务分类 (方便筛选) ──
+enum TaskCategory {
+  HOUSEWORK            // 家务
+  STUDY                // 学习
+  EXERCISE             // 运动
+  HABIT                // 生活习惯
+  SOCIAL               // 社交礼仪
+  OTHER                // 其他
+}
+
+// ── 奖励 (商城道具) 分类 ──
+enum RewardCategory {
+  MONEY                // 零花钱
+  TOY                  // 玩具
+  BOOK                 // 绘本/书籍
+  ENTERTAINMENT        // 娱乐时间
+  PRIVILEGE            // 特权
+  EXPERIENCE           // 体验
+  CUSTOM               // 自定义
+}
+
+// ── 奖励状态 ──
+enum RewardStatus {
+  ACTIVE               // 上架
+  INACTIVE             // 下架
+  SOLD_OUT             // 售罄
+}
+
+// ── 兑换状态 ──
+enum RedemptionStatus {
+  PENDING              // 待审批
+  APPROVED             // 已批准
+  REJECTED             // 已拒绝
+  FULFILLED            // 已兑现
+}
+
+// ── 积分变动原因 ──
+enum PointReason {
+  TASK_COMPLETE        // 完成任务
+  TASK_BONUS           // 任务额外奖励 (连续/超额)
+  MANUAL_ADD           // 手动加积分
+  MANUAL_SUB           // 手动扣积分
+  ACHIEVEMENT_BONUS    // 成就奖励
+  REDEMPTION           // 兑换扣除
+  RESET                // 积分重置
+  SYSTEM_BONUS         // 系统赠送 (节日/生日)
+  PET_OUTFIT           // 购买宠物装扮
+}
+
+// ── 宠物种类 ──
+enum PetSpecies {
+  CAT                  // 🐱 小猫
+  DOG                  // 🐶 小狗
+  FOX                  // 🦊 小狐狸
+  RABBIT               // 🐰 小兔
+  DRAGON               // 🐲 小龙
+  UNICORN              // 🦄 独角兽
+  PANDA                // 🐼 小熊猫
+  PENGUIN              // 🐧 小企鹅
+}
+
+// ── 宠物成长阶段 ──
+enum PetStage {
+  EGG                  // 🥚 蛋宝宝
+  BABY                 // 🐣 破壳啦
+  GROWING              // 🐥 成长中
+  EVOLVED              // 🦋 进阶
+  ULTIMATE             // 👑 完全体
+}
+
+// ── 通知类型 ──
+enum NotificationType {
+  TASK_COMPLETED       // 小朋友完成任务 (通知家长)
+  TASK_APPROVED        // 任务审核通过 (通知小朋友)
+  TASK_REJECTED        // 任务审核拒绝 (通知小朋友)
+  REDEMPTION_REQUEST   // 兑换申请 (通知家长)
+  REDEMPTION_APPROVED  // 兑换批准 (通知小朋友)
+  REDEMPTION_REJECTED  // 兑换拒绝 (通知小朋友)
+  REDEMPTION_FULFILLED // 兑换已兑现 (通知小朋友)
+  NEW_TASK             // 新任务发布 (通知小朋友)
+  PET_MISSING          // 宠物想你了 (提醒小朋友)
+  ACHIEVEMENT_UNLOCKED // 成就解锁 (通知小朋友)
+  STREAK_REMINDER      // 连续打卡提醒 (通知小朋友)
+  DAILY_REMINDER       // 每日任务提醒 (通知小朋友)
+  WEEKLY_REPORT        // 周报生成 (通知家长)
+  LOW_STOCK            // 商城低库存 (通知家长)
+}
+
+// ── 通知优先级 ──
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+// ── 成就分类 ──
+enum AchievementCategory {
+  LABOR                // 劳动
+  STUDY                // 学习
+  EXERCISE             // 运动
+  HABIT                // 习惯
+  SOCIAL               // 社交
+  REDEMPTION           // 兑换
+  SPECIAL              // 特殊
+}
+
+// ── 条件触发类型 ──
+enum TriggerConditionType {
+  TASK_COUNT           // 完成任务数量
+  CONSECUTIVE_DAYS     // 连续天数
+  TOTAL_POINTS         // 累计积分
+  REDEMPTION_COUNT     // 兑换次数
+  SPECIFIC_TASK        // 特定任务完成
+  STREAK               // 连续打卡
+  SPECIAL_DATE         // 特殊日期
+}
+
+// ── 皮肤主题 ──
+enum SkinType {
+  DEFAULT              // 默认黄色星星
+  OCEAN                // 🌊 海底世界
+  SPACE                // 🚀 太空探险
+  FOREST               // 🌲 森林王国
+  CANDY                // 🍭 糖果乐园
+  DUNGEON              // 🏰 冒险城堡
+  RAINBOW              // 🌈 彩虹世界
+}
+
+// =============================================================================
+//  核心模型
+// =============================================================================
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  👤 用户 (认证主体)
+// ──────────────────────────────────────────────────────────────────────────────
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  emailVerified DateTime?
+  name          String?                         // 显示名称
+  passwordHash  String?                         // 密码哈希 (备用)
+  role          UserAccountRole @default(PARENT)
+  avatar        String?                         // 头像 URL
+  isActive      Boolean  @default(true)         // 账号是否启用
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  familyMembers FamilyMember[]
+  notifications Notification[]
+  comments      Comment[]
+  redeemedBy    RewardRedemption[]  @relation("RedemptionApprover")
+  approvedTasks TaskCompletion[]    @relation("TaskApprover")
+
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  👨‍👩‍👧 家庭
+// ──────────────────────────────────────────────────────────────────────────────
+model Family {
+  id          String   @id @default(uuid())
+  name        String                           // "朵朵一家"
+  avatar      String?                          // 家庭头像
+  description String?                          // 家庭介绍
+  timezone    String   @default("Asia/Shanghai")
+  inviteCode  String   @default(uuid()) @unique // 邀请码
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     FamilyMember[]
+  tasks       Task[]
+  taskTemplates TaskTemplate[]
+  rewards     Reward[]
+  achievements Achievement[]
+  settings    FamilySetting[]
+  pointRules  PointRule[]
+  themes      ThemeSkin[]
+  pointConfigs PointConfig[]
+  petOutfits  PetOutfit[]
+
+  @@map("families")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  👤 家庭成员 (用户 ↔ 家庭的桥梁)
+// ──────────────────────────────────────────────────────────────────────────────
+model FamilyMember {
+  id          String    @id @default(uuid())
+  familyId    String
+  family      Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        MemberRole
+  nickname    String?                           // 小朋友昵称
+  avatar      String?                          // 成员专属头像
+  age         Int?
+  birthdate   DateTime?
+  sortOrder   Int      @default(0)              // 排序
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 积分 (当前积分 = 收入 - 支出, 冗余字段方便查询)
+  currentPoints Int    @default(0)
+
+  // 关联
+  tasks           Task[]              @relation("TaskAssignees")
+  completions     TaskCompletion[]
+  redemptions     RewardRedemption[]
+  pointLogs       PointLog[]
+  pet             Pet?
+  achievements    AchievementGrant[]
+  notifications   Notification[]
+  petOutfits      PetOutfitGrant[]
+  comments        Comment[]
+  themeSkins      ThemeSkin[]
+  dailyStats      DailyStats[]
+  weeklyStats     WeeklyStats[]
+
+  @@unique([familyId, userId])
+  @@index([familyId])
+  @@index([userId])
+  @@map("family_members")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  📋 任务
+// ──────────────────────────────────────────────────────────────────────────────
+model Task {
+  id          String    @id @default(uuid())
+  familyId    String
+  family      Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // 基本信息
+  name        String                           // "刷牙"
+  description String?                          // 给小朋友看的故事化描述
+  icon        String?                          // emoji 图标
+  image       String?                          // 任务配图 URL
+  category    TaskCategory @default(OTHER)
+
+  // 类型与规则
+  type        TaskType              @default(DAILY)
+  frequency   TaskFrequency         @default(MANUAL)
+  difficulty  TaskDifficulty        @default(MEDIUM)
+  points      Int                    @default(5)       // 基础积分
+
+  // 生成规则
+  autoApprove Boolean              @default(false)     // 是否自动通过 (简单任务)
+  maxDaily    Int                  @default(1)         // 每日最多完成次数
+  weekDays    String               @default("[1,2,3,4,5]") // JSON array, 适用的星期 (1=周一, 7=周日)
+
+  // 有效期
+  startDate   DateTime?
+  endDate     DateTime?
+
+  // 状态
+  status      TaskStatus            @default(ACTIVE)
+  sortOrder   Int                   @default(0)
+  isTemplate  Boolean               @default(false)    // 是否来自模板
+
+  // 审计
+  creatorId   String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  // 关联
+  assignees   FamilyMember[] @relation("TaskAssignees")
+  completions TaskCompletion[]
+
+  @@index([familyId])
+  @@index([status])
+  @@index([familyId, status])
+  @@map("tasks")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  📋 任务模板 (预设常用任务)
+// ──────────────────────────────────────────────────────────────────────────────
+model TaskTemplate {
+  id          String   @id @default(uuid())
+  familyId    String?                         // null = 全局模板
+  family      Family?  @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  isGlobal    Boolean  @default(false)        // 全局模板 (所有家庭可用)
+
+  name        String
+  description String?
+  icon        String?
+  category    TaskCategory @default(OTHER)
+  type        TaskType     @default(DAILY)
+  frequency   TaskFrequency @default(DAILY)
+  difficulty  TaskDifficulty @default(MEDIUM)
+  points      Int        @default(10)
+  autoApprove Boolean    @default(false)
+  maxDaily    Int        @default(1)
+  weekDays    String     @default("[1,2,3,4,5]") // JSON array
+
+  // 标签
+  tags        String     @default("[]")          // JSON array of strings
+
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([isGlobal, category])
+  @@map("task_templates")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  ✅ 任务完成记录
+// ──────────────────────────────────────────────────────────────────────────────
+model TaskCompletion {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // 完成信息
+  date        DateTime @default(now())       // 完成日期 (用于去重判断)
+  pointsEarned Int     @default(0)           // 实际获得积分 (可能有加成)
+  status      CompletionStatus @default(PENDING)
+
+  // 审核信息
+  approvedBy  String?
+  approver    User?    @relation("TaskApprover", fields: [approvedBy], references: [id])
+  approvedAt  DateTime?
+  parentNote  String?  // 家长评语/鼓励语
+
+  // 证明 (可选 - 家长上传照片等)
+  proofImages String  @default("[]")          // JSON array of image URLs
+
+  createdAt   DateTime @default(now())
+
+  @@unique([taskId, memberId, date])         // 同一天同一任务同一人只记录一次
+  @@index([memberId, status])
+  @@index([taskId, date])
+  @@index([date])
+  @@map("task_completions")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🛒 商城道具
+// ──────────────────────────────────────────────────────────────────────────────
+model Reward {
+  id          String   @id @default(uuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // 基本信息
+  name        String
+  description String?
+  image       String?                          // 道具图片
+  category    RewardCategory
+  tags        String    @default("[]")           // JSON array of tags
+
+  // 积分与库存
+  points      Int                             // 所需积分
+  stock       Int        @default(0)           // 库存 (0=不限)
+  remainingStock Int     @default(0)           // 剩余库存
+  maxPerPerson Int       @default(0)           // 每人限购 (0=不限)
+  cooldownDays Int       @default(0)           // 兑换冷却天数
+
+  // 状态
+  status      RewardStatus @default(ACTIVE)
+  sortOrder   Int        @default(0)
+  isFeatured  Boolean    @default(false)       // 是否推荐
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  redemptions RewardRedemption[]
+
+  @@index([familyId, status])
+  @@index([familyId, category])
+  @@map("rewards")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🎁 兑换记录
+// ──────────────────────────────────────────────────────────────────────────────
+model RewardRedemption {
+  id          String   @id @default(uuid())
+  rewardId    String
+  reward      Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // 兑换信息
+  pointsSpent Int                // 实际消耗积分
+  status      RedemptionStatus @default(PENDING)
+
+  // 留言
+  kidMessage  String?            // 小朋友的申请留言
+  parentNote  String?            // 家长审批备注
+
+  // 审批信息
+  approvedBy  String?
+  approver    User?    @relation("RedemptionApprover", fields: [approvedBy], references: [id])
+  approvedAt  DateTime?
+  fulfilledAt DateTime?          // 实际兑现时间
+
+  createdAt   DateTime @default(now())
+
+  @@index([memberId, status])
+  @@index([rewardId])
+  @@index([createdAt])
+  @@map("reward_redemptions")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  ⭐ 积分日志
+// ──────────────────────────────────────────────────────────────────────────────
+model PointLog {
+  id          String    @id @default(uuid())
+  memberId    String
+  member      FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // 变动信息
+  amount      Int                   // 正数=收入, 负数=支出
+  reason      PointReason           // 变动原因
+  referenceId String?               // 关联ID (任务ID/兑换ID等)
+  referenceType String?             // 关联类型 (Task/RewardRedemption/Manual/Achievement)
+  note        String?               // 备注
+
+  // 余额快照
+  balanceAfter Int                  // 变动后余额
+
+  createdAt   DateTime @default(now())
+
+  @@index([memberId, createdAt])
+  @@index([memberId, reason])
+  @@index([createdAt])
+  @@map("point_logs")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🏆 成就
+// ──────────────────────────────────────────────────────────────────────────────
+model Achievement {
+  id          String   @id @default(uuid())
+  familyId    String?  // null = 全局内置成就
+  family      Family?  @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  isGlobal    Boolean  @default(false)
+
+  // 基本信息
+  name        String
+  description String?
+  icon        String             // emoji 或图标 URL
+  category    AchievementCategory @default(SPECIAL)
+
+  // 触发条件 (JSON)
+  // 示例: { "type": "TASK_COUNT", "count": 50, "category": "HOUSEWORK" }
+  condition   String
+
+  // 奖励
+  bonusPoints Int      @default(0)
+  sortOrder   Int      @default(0)
+
+  // 状态
+  isActive    Boolean  @default(true)
+  isHidden    Boolean  @default(false)  // 隐藏成就 (达成前不显示)
+
+  createdAt   DateTime @default(now())
+
+  // 关联
+  granted     AchievementGrant[]
+
+  @@index([familyId, isGlobal])
+  @@index([category])
+  @@map("achievements")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🏅 成就授予记录
+// ──────────────────────────────────────────────────────────────────────────────
+model AchievementGrant {
+  id            String    @id @default(uuid())
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  grantedAt     DateTime  @default(now())
+
+  // 解锁时的上下文信息
+  triggeredBy   String?   // 触发的事件ID
+  context       String?     // 解锁时的额外信息
+
+  @@unique([achievementId, memberId])
+  @@index([memberId])
+  @@map("achievement_grants")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🐱 宠物
+// ──────────────────────────────────────────────────────────────────────────────
+model Pet {
+  id           String    @id @default(uuid())
+  memberId     String    @unique
+  member       FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // 宠物属性
+  species      PetSpecies
+  name         String    @default("小宝贝")     // 小朋友给宠物取的名字
+  level        Int       @default(0)            // 成长值 (0-2000)
+  stage        PetStage  @default(EGG)
+  mood         Int       @default(100)          // 心情值 (0-100)
+
+  // 时间追踪
+  lastFeedDate DateTime?                       // 上次互动日期
+  lastMoodUpdate DateTime?                     // 上次心情更新
+
+  // 装扮
+  currentOutfit String?                       // 当前装备的装扮ID
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("pets")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  👗 宠物装扮
+// ──────────────────────────────────────────────────────────────────────────────
+model PetOutfit {
+  id          String   @id @default(uuid())
+  familyId    String?  // null = 全局默认装扮
+  family      Family?  @relation(fields: [familyId], references: [id], onDelete: SetNull)
+
+  name        String
+  description String?
+  image       String?                          // 装扮图片
+  species     PetSpecies?                      // 适用宠物 (null = 所有)
+  points      Int       @default(0)            // 解锁所需积分 (0 = 默认免费)
+  isDefault   Boolean   @default(false)        // 是否默认解锁
+
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  grants      PetOutfitGrant[]
+
+  @@map("pet_outfits")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  👗 宠物装扮获取记录
+// ──────────────────────────────────────────────────────────────────────────────
+model PetOutfitGrant {
+  id        String   @id @default(uuid())
+  outfitId  String
+  outfit    PetOutfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  pointsSpent Int     @default(0)
+  unlockedAt  DateTime @default(now())
+
+  @@unique([outfitId, memberId])
+  @@map("pet_outfit_grants")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🔔 通知
+// ──────────────────────────────────────────────────────────────────────────────
+model Notification {
+  id        String   @id @default(uuid())
+
+  // 目标: 同时关联 userId (发送者) 和 memberId (家庭内成员)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId  String?
+  member    FamilyMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  // 通知内容
+  type      NotificationType
+  priority  NotificationPriority @default(NORMAL)
+  title     String
+  content   String?
+  link      String?            // 跳转链接
+  data      String?              // 额外数据 (用于客户端跳转)
+
+  // 状态
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@index([memberId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  💬 家长鼓励留言
+// ──────────────────────────────────────────────────────────────────────────────
+model Comment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId  String?  // 评论针对的小朋友
+  member    FamilyMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  // 关联的任务完成 (可选)
+  completionId String?
+
+  content   String             // 留言内容
+  isPinned  Boolean  @default(false)    // 是否置顶
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId, createdAt])
+  @@map("comments")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  ⚙️ 家庭设置
+// ──────────────────────────────────────────────────────────────────────────────
+model FamilySetting {
+  id        String   @id @default(uuid())
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  key       String
+  value     String            // JSON 字符串存储复杂值
+
+  @@unique([familyId, key])
+  @@map("family_settings")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  📐 积分规则配置
+// ──────────────────────────────────────────────────────────────────────────────
+model PointRule {
+  id          String   @id @default(uuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // 规则类型
+  ruleType    String               // STREAK_BONUS / WEEKEND_DOUBLE / BIRTHDAY_TRIPLE / DAILY_CAP
+  name        String               // "连续7天奖励"
+  description String?
+
+  // 规则参数 (JSON)
+  // 示例: { "days": 7, "bonus": 50 }
+  params      String
+
+  // 状态
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([familyId, isActive])
+  @@map("point_rules")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  📐 积分配置 (快速设置)
+// ──────────────────────────────────────────────────────────────────────────────
+model PointConfig {
+  id            String   @id @default(uuid())
+  familyId      String
+  family        Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // 积分规则开关
+  weekendDouble Boolean  @default(false)        // 周末双倍积分
+  birthdayTriple Boolean @default(false)        // 生日三倍积分
+  enableDeduction Boolean @default(false)       // 是否允许扣积分
+  dailyCap      Int      @default(0)            // 每日积分上限 (0=不限)
+  resetType     String   @default("NONE")       // NONE / MONTHLY / YEARLY / SEMESTER
+
+  // 连续奖励 (JSON)
+  // 示例: [3, 7, 14, 30] → 连续3天+10, 7天+50, 14天+100, 30天+300
+  streakBonuses String     @default("[{\"days\":3,\"points\":10},{\"days\":7,\"points\":50},{\"days\":14,\"points\":100},{\"days\":30,\"points\":300}]")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([familyId])
+  @@map("point_configs")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  🎨 主题皮肤
+// ──────────────────────────────────────────────────────────────────────────────
+model ThemeSkin {
+  id          String   @id @default(uuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  memberId    String?  // 特定小朋友的主题 (null = 家庭通用)
+  member      FamilyMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  skin        SkinType
+  points      Int      @default(0)              // 解锁所需积分 (0 = 默认)
+  isUnlocked  Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([familyId, memberId, skin])
+  @@map("theme_skins")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  📊 每日统计快照 (用于快速生成报告)
+// ──────────────────────────────────────────────────────────────────────────────
+model DailyStats {
+  id              String   @id @default(uuid())
+  memberId        String
+  member          FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  date            DateTime // 统计日期 (截断到日)
+
+  // 当日数据
+  tasksAssigned   Int      @default(0)          // 分配的任务数
+  tasksCompleted  Int      @default(0)          // 完成的任务数
+  tasksApproved   Int      @default(0)          // 批准的任务数
+  pointsEarned    Int      @default(0)          // 当日获得积分
+  pointsSpent     Int      @default(0)          // 当日消费积分
+  redemptions     Int      @default(0)          // 当日兑换次数
+  streak          Int      @default(0)          // 连续天数
+
+  createdAt       DateTime @default(now())
+
+  @@unique([memberId, date])
+  @@index([memberId, date])
+  @@map("daily_stats")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  📊 每周统计快照
+// ──────────────────────────────────────────────────────────────────────────────
+model WeeklyStats {
+  id              String   @id @default(uuid())
+  memberId        String
+  member          FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  weekStart       DateTime // 本周开始日期
+  weekEnd         DateTime // 本周结束日期
+
+  tasksCompleted  Int      @default(0)
+  tasksCompletedRate Float  @default(0)          // 完成率 (0-100)
+  pointsEarned    Int      @default(0)
+  pointsSpent     Int      @default(0)
+  redemptions     Int      @default(0)
+  achievements    Int      @default(0)          // 本周获得成就数
+
+  createdAt       DateTime @default(now())
+
+  @@unique([memberId, weekStart])
+  @@index([memberId, weekStart])
+  @@map("weekly_stats")
+}
+
+// =============================================================================
+//  🗺️ 数据库映射总览
+// =============================================================================
+//
+//  表名                    | 说明                    | 记录数预估
+//  ─────────────────────────────────────────────────────────────────────────
+//  users                   | 用户账号                 | 按家庭数
+//  families                | 家庭                     | 按用户数
+//  family_members          | 家庭成员                 | 每家庭 2-5 人
+//  tasks                   | 任务                     | 每家庭 10-30 个
+//  task_templates          | 任务模板                 | ~50 全局模板
+//  task_completions        | 任务完成记录             | 每家庭 100-1000/月
+//  rewards                 | 商城道具                 | 每家庭 10-30 个
+//  reward_redemptions      | 兑换记录                 | 每家庭 5-20/月
+//  point_logs              | 积分日志                 | 大量, 随时间增长
+//  achievements            | 成就                     | ~30 全局 + 自定义
+//  achievement_grants      | 成就授予                 | 每用户 5-15 个
+//  pets                    | 宠物                     | 每个小朋友 1 个
+//  pet_outfits             | 宠物装扮                 | ~20 全局装扮
+//  pet_outfit_grants       | 装扮获取                 | 按购买量
+//  notifications           | 通知                     | 大量, 按活跃度
+//  comments                | 家长留言                 | 按互动量
+//  family_settings         | 家庭设置                 | 每家庭 ~5 个
+//  point_rules             | 积分规则                 | 每家庭 ~5 个
+//  point_configs           | 积分配置                 | 每家庭 1 个
+//  theme_skins             | 主题皮肤                 | 每家庭 7 个
+//  daily_stats             | 每日统计                 | 每用户 30/月
+//  weekly_stats            | 每周统计                 | 每用户 4/月
+//
+// =============================================================================
