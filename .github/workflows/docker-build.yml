@@ -62,3 +62,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            DATABASE_URL=postgresql://starkids:starkids@db:5432/starkids
+            AUTH_SECRET=build-time-secret-placeholder-change-in-production

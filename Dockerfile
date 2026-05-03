@@ -11,6 +11,11 @@ FROM base AS builder
 RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
+ARG DATABASE_URL
+ARG AUTH_SECRET
+ENV DATABASE_URL=$DATABASE_URL
+ENV AUTH_SECRET=$AUTH_SECRET
+
 COPY package.json package-lock.json* ./
 RUN npm ci
 
@@ -21,6 +26,7 @@ RUN npx prisma generate
 
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_APP_URL=http://localhost:3000
 RUN npm run build
 
 FROM base AS runner
