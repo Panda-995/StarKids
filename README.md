@@ -347,7 +347,7 @@ DATABASE_URL="postgresql://starkids:starkids@db:5432/starkids"
 
 ## 📄 许可证 / License
 
-MIT
+[AGPL-3.0](LICENSE)
 
 ---
 
